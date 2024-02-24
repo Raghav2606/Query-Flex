@@ -1,5 +1,7 @@
 import sqlite3
 import pandas as pd
+import os
+
 
 conn=sqlite3.connect('query_flex')
 cur=conn.cursor()
@@ -8,9 +10,14 @@ cur=conn.cursor()
 
 def table_creater(input,query):
     for tbl_info in input:
-        if tbl_info[0]!='' and tbl_info[1]!='' and tbl_info[2]!='':
-            if tbl_info[2].lower()=='excel':
+        if tbl_info[0]!='' and tbl_info[1]!='':
+            head,tail=os.path.split(tbl_info[0])
+            if tail.split('.')[1].lower()=='xlsx':
                 src=pd.read_excel(tbl_info[0])
+                src.to_sql(tbl_info[1],conn,if_exists='replace',index=False)
+
+            if tail.split('.')[1].lower()=='csv':
+                src=pd.read_csv(tbl_info[0])
                 src.to_sql(tbl_info[1],conn,if_exists='replace',index=False)
     
     src_rest=cur.execute(query)
@@ -20,14 +27,8 @@ def table_creater(input,query):
             
 
            
-# input=[[r"C:\Users\320128965\Downloads\MasterFile.xlsx", 'master', 'Excel'], [r"C:\Users\320128965\Downloads\Validation.xlsx", 'validate', 'Excel']]
+# input=[[r"C:\Users\320128965\Downloads\MasterFile.xlsx", 'master'],[r"C:\Users\320128965\Downloads\SalesOrder with False.csv", 'validate']]
 # query="""
-# select a.*,b.* from 
-# master as a
-# left join
-# validation as b
-# a.fact_order=b.factory_sales_order
-# and
-# a.fact_line=b.factory_sales_order_line
+# select * from master
 # """
-# table_creater(input,query)
+# print(table_creater(input,query))
