@@ -7,6 +7,7 @@ import pandas as pd
 import os
 import csv
 
+
 def table_creater(input,query): 
     conn=sqlite3.connect('query_flex')
     cur=conn.cursor()
@@ -74,7 +75,13 @@ def export_treeview_items(treeview, writer, parent=""):
         writer.writerow(values)
         # Recursively export child items if present
         export_treeview_items(treeview, writer, item)
+     
 
+def show_menu(event):
+    # Ensure an item is selected
+    global menu
+    if treeview.selection():
+        menu.post(event.x_root, event.y_root)
 
 def get_values():
     global path_1, tbl1_alias, path_2, tbl2_alias,path_3, tbl3_alias,path_4, tbl4_alias,sheet_1,sheet_2,sheet_3,sheet_4
@@ -91,6 +98,8 @@ def get_values():
     sheet_3=Sheet_Name_3.get()
     sheet_4=Sheet_Name_4.get()
 
+
+
 def get_query():
     global treeview, table_frame,resized_image_d
     input_query = text_editor.get("1.0", "end-1c")
@@ -102,7 +111,7 @@ def get_query():
         table_frame.destroy()
 
     # Table Frame
-    table_frame = ttk.Frame(root)
+    table_frame = ttk.Frame(root)    
     table_frame.pack(fill='both', expand=True)
 
     # Create Treeview widget
@@ -125,6 +134,7 @@ def get_query():
     export_button = ttk.Button(table_frame, text="csv",image=resized_image_d, command=export_treeview)
     export_button.grid(row=0, column=2, sticky='ns')
     
+    
 
     for col in columns:
         treeview.heading(col, text=col)
@@ -134,10 +144,10 @@ def get_query():
 root = tk.Tk() 
 
 # root_directory
-#parent_directory = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-run_icon_path=r"C:\Users\320128965\OneDrive - Philips\Documents\Personal 2024\Products\Query-Flex\Source_Code\play-button.png"
-window_icon_path=r"C:\Users\320128965\OneDrive - Philips\Documents\Personal 2024\Products\Query-Flex\Source_Code\WindowIcon.png"
-background_image_path=r"C:\Users\320128965\OneDrive - Philips\Documents\Personal 2024\Products\Query-Flex\Source_Code\Background Image.jpg"
+parent_directory = os.path.abspath(os.path.join(os.path.dirname(__file__), "."))
+run_icon_path=fr"{parent_directory}\Icons\play-button.png"
+window_icon_path=fr"{parent_directory}\Icons\WindowIcon.png"
+background_image_path=fr"{parent_directory}\Icons\Background Image.jpg"
 
 
 #window icon
@@ -291,13 +301,19 @@ resized_image = run_image.subsample(width // desired_width, height // desired_he
 button_run = ttk.Button(frame_editor, text="Run",image=resized_image, command=get_query)
 button_run.pack(padx=5, pady=5)
 
-download_icon_path=r"C:\Users\320128965\OneDrive - Philips\Documents\Personal 2024\Products\Query-Flex\Source_Code\DownloadIcon.png"
+download_icon_path=fr"{parent_directory}\Icons\DownloadIcon.png"
 download_icon_image = tk.PhotoImage(file=download_icon_path) 
 width_d, height_d = download_icon_image.width(), download_icon_image.height()
 desired_width_d = 33  # Specify the desired width for the button image
 desired_height_d = 33  # Specify the desired height for the button image
 global resized_image_d
 resized_image_d = download_icon_image.subsample(width_d // desired_width_d, height_d // desired_height_d)
+
+#copyright
+label = tk.Label(root)
+
+copyright_label = tk.Label(root, text="Copyright © 2024 @ Philips ISC Digtal COE", bd=1, relief=tk.RIDGE, anchor=tk.W)
+copyright_label.pack(side=tk.BOTTOM, fill=tk.X)
 
 # Main loop
 root.mainloop()
