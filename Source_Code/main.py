@@ -4,7 +4,6 @@ import os
 from PIL import Image, ImageTk
 import sqlite3
 import pandas as pd
-import os
 import csv
 
 
@@ -30,13 +29,13 @@ def table_creater(input,query):
     try:
         src_rest=cur.execute(query)
         column_names = [description[0] for description in cur.description]
-        df_stock_q = pd.DataFrame(cur.fetchall(),columns=column_names)
+        df_result = pd.DataFrame(cur.fetchall(),columns=column_names)
     except Exception as e:
         messagebox.showerror("Error", e)
     finally:        
         conn.close()
         os.remove('query_flex')
-    return df_stock_q
+    return df_result
 
 def clear_entries():
     for widget in widgets_frame.winfo_children():
@@ -83,21 +82,43 @@ def show_menu(event):
     if treeview.selection():
         menu.post(event.x_root, event.y_root)
 
+def file_exist_validation(path,status):
+    print(path,status)
+    if str(status).lower()=='false':
+        messagebox.showerror("Error",f"{path} does not exists")
+
+
 def get_values():
     global path_1, tbl1_alias, path_2, tbl2_alias,path_3, tbl3_alias,path_4, tbl4_alias,sheet_1,sheet_2,sheet_3,sheet_4
-    path_1 = table_path_1.get()
-    tbl1_alias = table1_alias.get()
-    path_2 = table_path_2.get()
-    tbl2_alias = table2_alias.get()
-    path_3 = table_path_3.get()
-    tbl3_alias = table3_alias.get()
-    path_4 = table_path_4.get()
-    tbl4_alias = table4_alias.get()
-    sheet_1=Sheet_Name_1.get()
-    sheet_2=Sheet_Name_2.get()
-    sheet_3=Sheet_Name_3.get()
-    sheet_4=Sheet_Name_4.get()
+    path_1 = table_path_1.get().strip()
+    tbl1_alias = table1_alias.get().strip()
+    path_2 = table_path_2.get().strip()
+    tbl2_alias = table2_alias.get().strip()
+    path_3 = table_path_3.get().strip()
+    tbl3_alias = table3_alias.get().strip()
+    path_4 = table_path_4.get().strip()
+    tbl4_alias = table4_alias.get().strip()
+    sheet_1=Sheet_Name_1.get().strip()
+    sheet_2=Sheet_Name_2.get().strip()
+    sheet_3=Sheet_Name_3.get().strip()
+    sheet_4=Sheet_Name_4.get().strip()
 
+     #path_validation
+    if path_1:
+        path_1_exist=os.path.exists(path_1)
+        file_exist_validation(path_1,path_1_exist) 
+    if path_2:   
+        path_2_exist=os.path.exists(path_2)
+        file_exist_validation(path_2,path_2_exist)
+    if path_3:
+        path_3_exist=os.path.exists(path_3)
+        file_exist_validation(path_3,path_3_exist)
+    if path_4:
+        path_4_exist=os.path.exists(path_4)
+        file_exist_validation(path_4,path_4_exist)
+
+
+   
 
 
 def get_query():
