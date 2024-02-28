@@ -330,11 +330,6 @@ desired_height_d = 33  # Specify the desired height for the button image
 global resized_image_d
 resized_image_d = download_icon_image.subsample(width_d // desired_width_d, height_d // desired_height_d)
 
-#copyright
-label = tk.Label(root)
-
-copyright_label = tk.Label(root, text="Copyright © 2024 @ Philips ISC Digtal COE", bd=1, relief=tk.RIDGE, anchor=tk.W)
-copyright_label.pack(side=tk.BOTTOM, fill=tk.X)
 
 # Main loop
 root.mainloop()
