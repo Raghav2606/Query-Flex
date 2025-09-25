@@ -3,7 +3,6 @@ import os
 import duckdb
 import pandas as pd
 import matplotlib
-matplotlib.use("Qt5Agg")
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
 import mplcursors
@@ -21,7 +20,7 @@ from openai import OpenAI
 from dotenv import load_dotenv
 load_dotenv()
 
-# Load OpenAI client (expects OPENAI_API_KEY in env)
+matplotlib.use("Qt5Agg")
 client = OpenAI(api_key=os.environ["OPENAI_API_KEY"], base_url=os.environ["OPENAI_BASE_URL"])
 
 
@@ -89,7 +88,6 @@ class SQLExplorer(QWidget):
         self.current_result_df = None
         self.dark_mode = True
 
-        # --- Layout ---
         main_layout = QHBoxLayout(self)
 
         # Sidebar
@@ -102,6 +100,7 @@ class SQLExplorer(QWidget):
         self.table_list.setHorizontalHeaderLabels(["Alias", "File", "Sheet", "Rows", "Edit", "Remove"])
         self.table_list.horizontalHeader().setStretchLastSection(True)
         self.table_list.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table_list.cellClicked.connect(self.on_table_clicked)  # keep schema in sync
         sidebar_layout.addWidget(self.table_list)
 
         self.schema_label = QLabel("Schema Preview")
@@ -122,7 +121,7 @@ class SQLExplorer(QWidget):
         self.context_editor.textChanged.connect(self.save_context)
         sidebar_layout.addWidget(self.context_editor)
 
-        # Right: editor + results
+        # Right side
         right_splitter = QSplitter(Qt.Vertical)
 
         # Editor
@@ -154,15 +153,21 @@ class SQLExplorer(QWidget):
 
         right_splitter.addWidget(editor_widget)
 
-        # Results Tabs
+        # Results
         results_widget = QWidget()
         results_layout = QVBoxLayout(results_widget)
         self.tabs = QTabWidget()
 
-        # Table Tab
+        # Table tab
         self.result_table = QTableWidget(0, 0)
-        self.result_table.horizontalHeader().setStretchLastSection(True)
-        self.result_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.result_table.setHorizontalScrollMode(QTableWidget.ScrollPerPixel)
+        self.result_table.setVerticalScrollMode(QTableWidget.ScrollPerPixel)
+        self.result_table.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.result_table.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.result_table.setWordWrap(False)
+        self.result_table.setTextElideMode(Qt.ElideNone)
+        self.result_table.horizontalHeader().setStretchLastSection(False)
+
         table_tab = QWidget()
         table_layout = QVBoxLayout(table_tab)
         table_layout.addWidget(self.result_table)
@@ -178,24 +183,24 @@ class SQLExplorer(QWidget):
 
         self.tabs.addTab(table_tab, "Table")
 
-        # Visualization Tab
+        # Visualization tab
         viz_tab = QWidget()
         viz_layout = QVBoxLayout(viz_tab)
-        control_layout = QHBoxLayout()
+        ctrl_layout = QHBoxLayout()
         self.x_dropdown = QComboBox()
         self.y_dropdown = QComboBox()
         self.chart_type = QComboBox()
         self.chart_type.addItems(["Bar", "Line", "Scatter"])
         self.plot_btn = QPushButton("📊 Plot")
         self.plot_btn.clicked.connect(self.plot_chart)
-        control_layout.addWidget(QLabel("X-axis"))
-        control_layout.addWidget(self.x_dropdown)
-        control_layout.addWidget(QLabel("Y-axis"))
-        control_layout.addWidget(self.y_dropdown)
-        control_layout.addWidget(QLabel("Type"))
-        control_layout.addWidget(self.chart_type)
-        control_layout.addWidget(self.plot_btn)
-        viz_layout.addLayout(control_layout)
+        ctrl_layout.addWidget(QLabel("X-axis"))
+        ctrl_layout.addWidget(self.x_dropdown)
+        ctrl_layout.addWidget(QLabel("Y-axis"))
+        ctrl_layout.addWidget(self.y_dropdown)
+        ctrl_layout.addWidget(QLabel("Type"))
+        ctrl_layout.addWidget(self.chart_type)
+        ctrl_layout.addWidget(self.plot_btn)
+        viz_layout.addLayout(ctrl_layout)
 
         self.figure = plt.Figure()
         self.canvas = FigureCanvas(self.figure)
@@ -219,10 +224,9 @@ class SQLExplorer(QWidget):
 
         main_layout.addWidget(main_splitter)
 
-        # Start dark theme
         apply_dark_theme(QApplication.instance())
 
-    # --- File mgmt ---
+    
     def add_file(self):
         file_path, _ = QFileDialog.getOpenFileName(
             self, "Open File", "", "Data Files (*.csv *.xlsx *.xls)"
@@ -257,7 +261,6 @@ class SQLExplorer(QWidget):
         if alias in self.tables:
             self.conn.unregister(alias)
         self.conn.register(alias, df)
-        # ✅ Store DataFrame for schema preview
         self.tables[alias] = {"df": df, "file": os.path.basename(file_path), "sheet": sheet, "context": ""}
         self.refresh_file_table()
         self.show_schema(alias)
@@ -272,27 +275,33 @@ class SQLExplorer(QWidget):
             self.table_list.setItem(row, 2, QTableWidgetItem(meta["sheet"]))
             self.table_list.setItem(row, 3, QTableWidgetItem(str(len(meta["df"]))))
 
-            # Edit icon
+            # Edit icon (flat & transparent)
             btn_edit = QPushButton()
             btn_edit.setIcon(QIcon.fromTheme("document-edit"))
             if btn_edit.icon().isNull():
                 btn_edit.setText("✏")
-            btn_edit.setToolTip("Edit alias/sheet")
             btn_edit.setFlat(True)
             btn_edit.setStyleSheet("background-color: transparent; border: none;")
+            btn_edit.setToolTip("Edit alias/sheet")
             btn_edit.clicked.connect(lambda _, a=alias: self.edit_table(a))
             self.table_list.setCellWidget(row, 4, btn_edit)
 
-            # Remove icon
+            # Remove icon (flat & transparent)
             btn_remove = QPushButton()
             btn_remove.setIcon(QIcon.fromTheme("edit-delete"))
             if btn_remove.icon().isNull():
                 btn_remove.setText("🗑")
-            btn_remove.setToolTip("Remove table")
             btn_remove.setFlat(True)
             btn_remove.setStyleSheet("background-color: transparent; border: none;")
+            btn_remove.setToolTip("Remove table")
             btn_remove.clicked.connect(lambda _, a=alias: self.remove_table(a))
             self.table_list.setCellWidget(row, 5, btn_remove)
+
+        
+        if self.table_list.rowCount() > 0:
+            self.table_list.selectRow(0)
+            alias = self.table_list.item(0, 0).text()
+            self.show_schema(alias)
 
     def edit_table(self, alias):
         meta = self.tables[alias]
@@ -411,7 +420,7 @@ class SQLExplorer(QWidget):
         mplcursors.cursor(ax, hover=True)
         self.canvas.draw()
 
-    # --- Export ---
+    
     def export_csv(self):
         if self.current_result_df is None:
             return
@@ -426,7 +435,7 @@ class SQLExplorer(QWidget):
         if path:
             self.current_result_df.to_excel(path, index=False)
 
-    # --- Theme toggle ---
+    
     def toggle_theme(self):
         self.dark_mode = not self.dark_mode
         if self.dark_mode:
@@ -435,7 +444,7 @@ class SQLExplorer(QWidget):
             apply_light_theme(QApplication.instance())
 
 
-# ---- Themes ----
+
 def apply_dark_theme(app: QApplication):
     dark_palette = QPalette()
     dark_palette.setColor(QPalette.Window, QColor(45, 45, 45))
@@ -450,7 +459,7 @@ def apply_dark_theme(app: QApplication):
     app.setStyleSheet("""
         QPushButton { background-color: #2d89ef; border: none; padding: 6px 12px; color: white; border-radius: 4px; }
         QPushButton:hover { background-color: #1b5fbd; }
-        QTextEdit, QTableWidget { border: 1px solid #555; border-radius: 4px; padding: 4px; }
+        QTextEdit, QTableWidget { border: 1px solid #555; border-radius: 4px; }
         QLabel, QCheckBox { color: #ffffff; }
         QCheckBox { font-size: 11pt; }
         QComboBox { background-color: #2d2d30; color: #ffffff; border: 1px solid #555; border-radius: 4px; padding: 4px; }
@@ -474,7 +483,7 @@ def apply_light_theme(app: QApplication):
     app.setStyleSheet("""
         QPushButton { background-color: #107C10; border: none; padding: 6px 12px; color: white; border-radius: 4px; }
         QPushButton:hover { background-color: #0B6A0B; }
-        QTextEdit, QTableWidget { border: 1px solid #ccc; border-radius: 4px; padding: 4px; background: white; }
+        QTextEdit, QTableWidget { border: 1px solid #ccc; border-radius: 4px; background: white; }
         QLabel, QCheckBox { color: #323130; }
         QCheckBox { font-size: 11pt; }
         QComboBox { background-color: #ffffff; color: #323130; border: 1px solid #ccc; border-radius: 4px; padding: 4px; }
